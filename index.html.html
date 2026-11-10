@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><link rel="manifest" href="./manifest.json">
+
+<link rel="apple-touch-icon" href="./icon-192.png">
+
+<meta name="theme-color" content="#1769aa">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<meta name="apple-mobile-web-app-title" content="土木数量計算">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>土木工事 数量計算ツール</title>
+<style>
+:root{--blue:#1769aa;--blue2:#eaf4ff;--green:#16835b;--bg:#f4f7fb;--text:#1f2937;--muted:#64748b;--line:#dbe3ec}
+*{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic UI","Meiryo",sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:980px;margin:28px auto;padding:0 16px}.header{background:linear-gradient(135deg,#125b99,#2382bd);color:#fff;padding:24px;border-radius:16px;box-shadow:0 8px 24px #163b5c22}.header h1{margin:0 0 6px;font-size:28px}.header p{margin:0;opacity:.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;margin-top:18px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 6px 18px #22334410}.card h2{margin:0 0 16px;font-size:21px;color:var(--blue)}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-weight:700;margin-bottom:6px}.input-wrap{display:flex;align-items:center;border:1px solid #b8c5d3;border-radius:9px;background:#fff;overflow:hidden}.input-wrap input{width:100%;border:0;padding:12px;font-size:17px;outline:none}.unit{padding:0 11px;color:var(--muted);font-weight:700;white-space:nowrap}.full{grid-column:1/-1}
+.buttons{display:flex;gap:10px;margin-top:16px}.copy-btn{margin-top:10px;width:100%;border:1px solid #c4b5fd;background:#fff;color:#6d28d9;border-radius:9px;padding:10px 14px;font-size:15px;font-weight:700;cursor:pointer}.copy-btn:hover{background:#f7f3ff}
+.buttons button{border:0;border-radius:9px;padding:12px 20px;font-size:16px;font-weight:700;cursor:pointer}.calc{background:var(--blue);color:#fff;flex:1}.clear{background:#e5eaf0;color:#334155}.results{margin-top:16px;background:var(--blue2);border-radius:12px;padding:15px}.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid #cfe1f3}.result-row:last-child{border-bottom:0}.result-label{font-weight:700}.result-value{font-size:24px;font-weight:800;color:var(--blue)}.formula{margin-top:12px;color:#536579;font-size:13px;line-height:1.7}.error{display:none;margin-top:12px;color:#b42318;background:#fff0ee;border-radius:8px;padding:10px;font-weight:700}
+.roadbed h2{color:var(--green)}.roadbed .calc{background:var(--green)}.roadbed .results{background:#eaf8f2}.roadbed .result-row{border-color:#ccebdd}.roadbed .result-value{color:var(--green)}
+.asphalt h2{color:#b45309}.asphalt .calc{background:#b45309}.asphalt .results{background:#fff5e6}.asphalt .result-row{border-color:#f3d6ac}.asphalt .result-value{color:#b45309}
+.soil h2{color:#7c3aed}.soil .calc{background:#7c3aed}.soil .results{background:#f4efff}.soil .result-row{border-color:#ddd0f8}.soil .result-value{color:#7c3aed}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.inputs{grid-template-columns:1fr}.full{grid-column:auto}.header h1{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header"><h1>土木工事 数量計算ツール</h1><p>現場数量計算</p></header>
+  <main class="grid">
+    <section class="card">
+      <h2>コンクリート数量計算</h2>
+      <div class="inputs">
+        <div class="field"><label for="cLen">延長</label><div class="input-wrap"><input id="cLen" type="number" min="0" step="any" placeholder="例：10.5"><span class="unit">m</span></div></div>
+        <div class="field"><label for="cWidth">幅</label><div class="input-wrap"><input id="cWidth" type="number" min="0" step="any" placeholder="例：0.6"><span class="unit">m</span></div></div>
+        <div class="field"><label for="cThick">厚さ</label><div class="input-wrap"><input id="cThick" type="number" min="0" step="any" placeholder="例：100"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="cLoss">ロス率</label><div class="input-wrap"><input id="cLoss" type="number" min="0" step="any" value="0"><span class="unit">%</span></div></div>
+      </div>
+      <div class="buttons"><button class="calc" onclick="calcConcrete()">計算する</button><button class="clear" onclick="clearConcrete()">クリア</button></div>
+      <div id="cError" class="error">延長・幅・厚さに0より大きい数値を入力してください。</div>
+      <div class="results">
+        <div class="result-row"><span class="result-label">設計数量</span><span class="result-value"><span id="cDesign">0.000</span> m³</span></div>
+        <div class="result-row"><span class="result-label">ロス込み数量</span><span class="result-value"><span id="cTotal">0.000</span> m³</span></div>
+      </div>
+      <div class="formula">設計数量 ＝ 延長 × 幅 × 厚さ<br>厚さは mm ÷ 1000 で m に自動換算します。<br>ロス込み数量 ＝ 設計数量 ×（1 ＋ ロス率 ÷ 100）</div>
+    </section>
+
+    <section class="card roadbed">
+      <h2>路盤材数量計算</h2>
+      <div class="inputs">
+        <div class="field"><label for="rLen">延長</label><div class="input-wrap"><input id="rLen" type="number" min="0" step="any" placeholder="例：20"><span class="unit">m</span></div></div>
+        <div class="field"><label for="rWidth">幅</label><div class="input-wrap"><input id="rWidth" type="number" min="0" step="any" placeholder="例：3.5"><span class="unit">m</span></div></div>
+        <div class="field"><label for="rThick">仕上がり厚</label><div class="input-wrap"><input id="rThick" type="number" min="0" step="any" placeholder="例：150"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="rFactor">締固め係数</label><div class="input-wrap"><input id="rFactor" type="number" min="0" step="any" value="1.20"><span class="unit">倍</span></div></div>
+        <div class="field"><label for="rDensity">材料密度</label><div class="input-wrap"><input id="rDensity" type="number" min="0" step="any" value="2.00"><span class="unit">t/m³</span></div></div>
+        <div class="field"><label for="rLoss">ロス率</label><div class="input-wrap"><input id="rLoss" type="number" min="0" step="any" value="0"><span class="unit">%</span></div></div>
+      </div>
+      <div class="buttons"><button class="calc" onclick="calcRoadbed()">計算する</button><button class="clear" onclick="clearRoadbed()">クリア</button></div>
+      <div id="rError" class="error">延長・幅・厚さ・締固め係数・材料密度に0より大きい数値を入力してください。</div>
+      <div class="results">
+        <div class="result-row"><span class="result-label">仕上がり数量</span><span class="result-value"><span id="rFinished">0.000</span> m³</span></div>
+        <div class="result-row"><span class="result-label">搬入数量</span><span class="result-value"><span id="rLoose">0.000</span> m³</span></div>
+        <div class="result-row"><span class="result-label">必要重量</span><span class="result-value"><span id="rWeight">0.000</span> t</span></div>
+      </div>
+      <div class="formula">仕上がり数量 ＝ 延長 × 幅 × 仕上がり厚<br>搬入数量 ＝ 仕上がり数量 × 締固め係数 ×（1 ＋ ロス率 ÷ 100）<br>必要重量 ＝ 搬入数量 × 材料密度<br>※係数・密度は材料や現場条件に合わせて変更してください。</div>
+    </section>
+
+    <section class="card asphalt">
+      <h2>As合材数量計算</h2>
+      <div class="inputs">
+        <div class="field"><label for="aLen">延長</label><div class="input-wrap"><input id="aLen" type="number" min="0" step="any" placeholder="例：50"><span class="unit">m</span></div></div>
+        <div class="field"><label for="aWidth">幅</label><div class="input-wrap"><input id="aWidth" type="number" min="0" step="any" placeholder="例：3.5"><span class="unit">m</span></div></div>
+        <div class="field"><label for="aThick">仕上がり厚</label><div class="input-wrap"><input id="aThick" type="number" min="0" step="any" placeholder="例：50"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="aDensity">合材密度</label><div class="input-wrap"><input id="aDensity" type="number" min="0" step="any" value="2.35"><span class="unit">t/m³</span></div></div>
+        <div class="field full"><label for="aLoss">ロス率</label><div class="input-wrap"><input id="aLoss" type="number" min="0" step="any" value="3"><span class="unit">%</span></div></div>
+      </div>
+      <div class="buttons"><button class="calc" onclick="calcAsphalt()">計算する</button><button class="clear" onclick="clearAsphalt()">クリア</button></div>
+      <div id="aError" class="error">延長・幅・厚さ・合材密度に0より大きい数値を入力してください。</div>
+      <div class="results">
+        <div class="result-row"><span class="result-label">舗装面積</span><span class="result-value"><span id="aArea">0.000</span> m²</span></div>
+        <div class="result-row"><span class="result-label">設計体積</span><span class="result-value"><span id="aVolume">0.000</span> m³</span></div>
+        <div class="result-row"><span class="result-label">設計重量</span><span class="result-value"><span id="aWeight">0.000</span> t</span></div>
+        <div class="result-row"><span class="result-label">ロス込み手配重量</span><span class="result-value"><span id="aTotal">0.000</span> t</span></div>
+      </div>
+      <div class="formula">舗装面積 ＝ 延長 × 幅<br>設計体積 ＝ 舗装面積 × 仕上がり厚<br>設計重量 ＝ 設計体積 × 合材密度<br>手配重量 ＝ 設計重量 ×（1 ＋ ロス率 ÷ 100）<br>※初期値は合材密度2.35t/m³、ロス率3％です。配合・現場条件に合わせて変更してください。</div>
+    </section>
+
+    <section class="card soil">
+      <h2>発生土 m³ → t 換算</h2>
+      <div class="inputs">
+        <div class="field"><label for="sVolume">発生土量</label><div class="input-wrap"><input id="sVolume" type="number" min="0" step="any" placeholder="例：10.5"><span class="unit">m³</span></div></div>
+        <div class="field"><label for="sDensity">密度</label><div class="input-wrap"><input id="sDensity" type="number" min="0" step="any" placeholder="例：1.80"><span class="unit">t/m³</span></div></div>
+      </div>
+      <div class="buttons"><button class="calc" onclick="calcSoil()">計算する</button><button class="clear" onclick="clearSoil()">クリア</button></div>
+      <div id="sError" class="error">発生土量と密度に0より大きい数値を入力してください。</div>
+      <div class="results">
+        <div class="result-row"><span class="result-label">換算重量</span><span class="result-value"><span id="sWeight">0.000</span> t</span></div>
+      </div>
+      <button id="sCopy" class="copy-btn" onclick="copySoilResult()">計算結果をコピー</button>
+      <div class="formula">換算重量（t）＝ 発生土量（m³）× 密度（t/m³）<br>※密度は現場条件・土質・処分先の指定値などに合わせて自由に入力できます。</div>
+    </section>
+  </main>
+</div>
+<script>
+const n=id=>Number(document.getElementById(id).value);
+const out=(id,v)=>document.getElementById(id).textContent=v.toFixed(3);
+function calcConcrete(){const l=n('cLen'),w=n('cWidth'),t=n('cThick'),loss=n('cLoss');const bad=!(l>0&&w>0&&t>0&&loss>=0);document.getElementById('cError').style.display=bad?'block':'none';if(bad)return;const d=l*w*(t/1000);out('cDesign',d);out('cTotal',d*(1+loss/100));}
+function clearConcrete(){['cLen','cWidth','cThick'].forEach(id=>document.getElementById(id).value='');document.getElementById('cLoss').value='0';out('cDesign',0);out('cTotal',0);document.getElementById('cError').style.display='none';}
+function calcRoadbed(){const l=n('rLen'),w=n('rWidth'),t=n('rThick'),f=n('rFactor'),d=n('rDensity'),loss=n('rLoss');const bad=!(l>0&&w>0&&t>0&&f>0&&d>0&&loss>=0);document.getElementById('rError').style.display=bad?'block':'none';if(bad)return;const finished=l*w*(t/1000);const loose=finished*f*(1+loss/100);out('rFinished',finished);out('rLoose',loose);out('rWeight',loose*d);}
+function clearRoadbed(){['rLen','rWidth','rThick'].forEach(id=>document.getElementById(id).value='');document.getElementById('rFactor').value='1.20';document.getElementById('rDensity').value='2.00';document.getElementById('rLoss').value='0';out('rFinished',0);out('rLoose',0);out('rWeight',0);document.getElementById('rError').style.display='none';}
+
+function calcAsphalt(){const l=n('aLen'),w=n('aWidth'),t=n('aThick'),d=n('aDensity'),loss=n('aLoss');const bad=!(l>0&&w>0&&t>0&&d>0&&loss>=0);document.getElementById('aError').style.display=bad?'block':'none';if(bad)return;const area=l*w;const volume=area*(t/1000);const weight=volume*d;out('aArea',area);out('aVolume',volume);out('aWeight',weight);out('aTotal',weight*(1+loss/100));}
+function clearAsphalt(){['aLen','aWidth','aThick'].forEach(id=>document.getElementById(id).value='');document.getElementById('aDensity').value='2.35';document.getElementById('aLoss').value='3';['aArea','aVolume','aWeight','aTotal'].forEach(id=>out(id,0));document.getElementById('aError').style.display='none';}
+
+function calcSoil(){const v=n('sVolume'),d=n('sDensity');const bad=!(v>0&&d>0);document.getElementById('sError').style.display=bad?'block':'none';if(bad)return;out('sWeight',v*d);}
+async function copySoilResult(){const v=document.getElementById('sWeight').textContent;const text='発生土 換算重量：'+v+' t';try{await navigator.clipboard.writeText(text);const b=document.getElementById('sCopy');const old=b.textContent;b.textContent='コピーしました';setTimeout(()=>b.textContent=old,1500);}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
+function clearSoil(){document.getElementById('sVolume').value='';document.getElementById('sDensity').value='';out('sWeight',0);document.getElementById('sError').style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){const card=document.activeElement.closest('.card');if(card?.classList.contains('roadbed'))calcRoadbed();else if(card?.classList.contains('asphalt'))calcAsphalt();else if(card?.classList.contains('soil'))calcSoil();else calcConcrete();}});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .then(() => {
+        console.log("Service Worker 登録完了");
+      })
+      .catch((error) => {
+        console.error("Service Worker 登録失敗:", error);
+      });
+  });
+}
+</script></body>
+</html>
