@@ -1,7 +1,7 @@
-const CACHE_NAME = 'doboku-tool-v93';
+const CACHE_NAME = 'doboku-tool-v107';
 const APP_SHELL = [
   './',
-  './index_93_integrated_connection_pipe_simple.html',
+  './index_107_co_products_lu_depths.html',
   './manifest.json'
 ];
 
@@ -34,7 +34,9 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() =>
-        caches.match(event.request).then(cached => cached || caches.match('./index_93_integrated_connection_pipe_simple.html'))
+        caches.match(event.request).then(cached =>
+          cached || caches.match('./index_107_co_products_lu_depths.html')
+        )
       )
   );
 });
